@@ -8,23 +8,146 @@ class ProgressPage extends StatelessWidget {
 
   Future<Map<String, dynamic>> fetchUserProgress() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    final doc =
+    if (uid == null) return {};
+    final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
-    final rawScores = doc.data()?['score'] ?? {};
-    final rawBadges = doc.data()?['badge'] ?? {};
+    final userData = userDoc.data();
+    if (userData == null) return {};
 
-    // Convert scores to Map<String, String> to preserve "7/10"
-    final scores = (rawScores as Map).map(
-      (key, value) => MapEntry(key.toString(), value.toString()),
+    final rawScores = userData['score'] ?? {};
+    final rawBadges = userData['badge'] ?? {};
+    final teacherNo = userData['teacher_no'];
+    final teacherQuizzes = Map<String, dynamic>.from(
+      userData['teacher_quiz'] ?? {},
     );
 
-    // Convert badges to Map<String, String>
-    final badges = (rawBadges as Map).map(
-      (key, value) => MapEntry(key.toString(), value.toString()),
-    );
+    print("Raw teacher_quiz data: $teacherQuizzes");
+    print("score: $rawScores");
+    print("badge: $rawBadges");
 
-    return {'scores': scores, 'badges': badges};
+    final scores = <String, String>{};
+    final badges = <String, String>{};
+
+    // Handle static (non-teacher) quizzes
+    // (rawScores as Map).forEach((key, value) {
+    //   scores[key.toString()] = value.toString();
+    // });
+    // (rawBadges as Map).forEach((key, value) {
+    //   badges[key.toString()] = value.toString();
+    // });
+
+    // Store titles from teacher-created quizzes
+    final dynamicChapters = <String>[];
+
+    // if (teacherNo != null && teacherNo.toString().isNotEmpty) {
+    //   for (var quizKey in teacherQuizzes.keys) {
+    //     final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
+    //     final quizId = info['quiz_id'];
+    //     if (quizId != null) {
+    //       // Fetch quiz document using teacherNo and quizId
+    //       final quizDoc =
+    //           await FirebaseFirestore.instance
+    //               .collection('chapters')
+    //               .where('owner_id', isEqualTo: teacherNo)
+    //               .get();
+
+    //       for (var chapter in quizDoc.docs) {
+    //         final quizRef = FirebaseFirestore.instance
+    //             .collection('chapters')
+    //             .doc(chapter.id)
+    //             .collection('quizzes')
+    //             .doc(quizId);
+
+    //         final quizSnapshot = await quizRef.get();
+    //         if (quizSnapshot.exists) {
+    //           final quizData = quizSnapshot.data();
+    //           final quizTitle = quizData?['title'] ?? quizKey;
+
+    //           dynamicChapters.add(quizTitle);
+    //           // Inject score and badge by quiz title
+    //           if (rawScores.containsKey(quizKey)) {
+    //             scores[quizTitle] = rawScores[quizKey];
+    //           }
+    //           if (rawBadges.containsKey(quizKey)) {
+    //             badges[quizTitle] = rawBadges[quizKey];
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+
+    //   return {
+    //     'scores': scores,
+    //     'badges': badges,
+    //     'chapters': dynamicChapters,
+    //     'teacher_quiz': teacherQuizzes,
+    //   };
+    // }
+
+    if (teacherNo != null && teacherNo.toString().isNotEmpty) {
+      for (var quizKey in teacherQuizzes.keys) {
+        final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
+        final quizId = info['quiz_id'];
+        if (quizId != null) {
+          final quizDoc =
+              await FirebaseFirestore.instance
+                  .collection('chapters')
+                  .where('owner_id', isEqualTo: teacherNo)
+                  .get();
+
+          for (var chapter in quizDoc.docs) {
+            final quizRef = FirebaseFirestore.instance
+                .collection('chapters')
+                .doc(chapter.id)
+                .collection('quizzes')
+                .doc(quizId);
+
+            final quizSnapshot = await quizRef.get();
+            if (quizSnapshot.exists) {
+              final quizData = quizSnapshot.data();
+              final quizTitle = quizData?['title'] ?? quizKey;
+
+              dynamicChapters.add(quizTitle);
+              if (rawScores.containsKey(quizKey)) {
+                scores[quizTitle] = rawScores[quizKey].toString();
+              }
+              if (rawBadges.containsKey(quizKey)) {
+                badges[quizTitle] = rawBadges[quizKey].toString();
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        'scores': scores,
+        'badges': badges,
+        'chapters': dynamicChapters,
+        'teacher_quiz': teacherQuizzes,
+      };
+    } else {
+      (rawScores as Map).forEach((key, value) {
+        scores[key.toString()] = value.toString();
+      });
+      (rawBadges as Map).forEach((key, value) {
+        badges[key.toString()] = value.toString();
+      });
+    }
+
+    return {
+      'scores': scores,
+      'badges': badges,
+      'chapters': [
+        'kenal_objek',
+        'susun_nombor',
+        'mengira_tambah',
+        'mengira_tolak',
+        'wang',
+        'masa',
+      ],
+      'teacher_quiz': {},
+    };
   }
 
   @override
@@ -71,15 +194,28 @@ class ProgressPage extends StatelessWidget {
               final earnedBadges =
                   badges.values.where((badge) => badge != "None").length;
 
-              final chapters = {
-                'Kenal Objek': 'kenal_objek',
-                'Nombor': 'susun_nombor',
-                'Tambah': 'mengira_tambah',
-                'Tolak': 'mengira_tolak',
-                'Wang': 'wang',
-                'Masa': 'masa',
+              final allChapterLabels = {
+                'kenal_objek': 'Kenal Objek',
+                'susun_nombor': 'Nombor',
+                'mengira_tambah': 'Tambah',
+                'mengira_tolak': 'Tolak',
+                'wang': 'Wang',
+                'masa': 'Masa',
               };
 
+              // Get dynamic or fallback chapters
+              // final chapterKeys =
+              //     (snapshot.data!['chapters'] as List).cast<String>();
+              final rawChapters = snapshot.data!['chapters'] as List ?? [];
+              final chapterKeys =
+                  rawChapters.whereType<String>().toList() ?? [];
+
+              final chapters = Map.fromEntries(
+                chapterKeys.map(
+                  (key) => MapEntry(allChapterLabels[key] ?? key, key),
+                ),
+              );
+              // print("chapter: $snapshot");
               return Column(
                 children: [
                   SizedBox(height: MediaQuery.of(context).padding.top + 10),
@@ -101,12 +237,15 @@ class ProgressPage extends StatelessWidget {
                             chapters.entries.map((entry) {
                               final displayName = entry.key;
                               final key = entry.value;
-                              final score = scores[key] ?? 0;
+                              final score = scores[key] ?? "0/10";
                               final badge = badges[key] ?? "None";
-
+                              // print(
+                              //   "🔍 Chapter key: $key | Score: $score | Badge: $badge",
+                              // );
                               return _buildProgressCard(
                                 displayName,
-                                score as String,
+                                // score as String,
+                                score,
                                 badge,
                                 context,
                               );

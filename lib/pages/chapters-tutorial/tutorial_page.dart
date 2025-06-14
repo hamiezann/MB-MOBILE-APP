@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:math_buddy_v1/models/chapter_model.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:audioplayers/audioplayers.dart';
+// import 'package:audioplayers/audioplayers.dart';
+import 'package:math_buddy_v1/pages/audio_helper.dart';
 
 class TutorialPage extends StatefulWidget {
   final Subtopic subtopic;
@@ -25,15 +28,65 @@ class _TutorialPageState extends State<TutorialPage>
 
   Future<void> _playAudio() async {
     final audioPath = widget.subtopic.tutorials[currentIndex].audioPath;
-    print("Audio path: $audioPath"); // Should show: audio/warna/1.mp3, etc.
+    print('audipath: $audioPath');
 
-    await _audioPlayer.stop();
-    await _audioPlayer.play(
-      AssetSource(audioPath),
-    ); // No extra 'assets/' prefix here
-    setState(() {
-      _isPlaying = true;
-    });
+    try {
+      setState(() => _isPlaying = true);
+      await _audioPlayer.stop();
+
+      if (isUrl(audioPath)) {
+        final file = await AudioCacheHelper.downloadAndCacheAudio(audioPath);
+        await _audioPlayer.setFilePath(file.path);
+      } else {
+        await _audioPlayer.setAsset('assets/$audioPath');
+      }
+
+      await _audioPlayer.play();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Audio gagal dimainkan. Periksa sambungan internet.',
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: () => _playAudio(),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pauseAudio() async {
+    try {
+      await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
+    } catch (e) {
+      debugPrint('Error pausing audio: $e');
+    }
+  }
+
+  Future<void> _stopAudio() async {
+    try {
+      await _audioPlayer.stop();
+      setState(() => _isPlaying = false);
+    } catch (e) {
+      debugPrint('Error stopping audio: $e');
+    }
   }
 
   @override
@@ -44,15 +97,17 @@ class _TutorialPageState extends State<TutorialPage>
     super.dispose();
   }
 
-  void _goNext() {
+  void _goNext() async {
     if (currentIndex < widget.subtopic.tutorials.length - 1) {
+      await _stopAudio();
       setState(() {
         currentIndex++;
       });
     }
   }
 
-  void _goPrevious() {
+  void _goPrevious() async {
+    await _stopAudio();
     if (currentIndex > 0) {
       setState(() {
         currentIndex--;
@@ -60,8 +115,13 @@ class _TutorialPageState extends State<TutorialPage>
     }
   }
 
-  void _finishTutorial() {
-    Navigator.pop(context); // Return to SubtopicPage
+  void _finishTutorial() async {
+    await _stopAudio();
+    Navigator.pop(context);
+  }
+
+  bool isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
 
   @override
@@ -73,12 +133,17 @@ class _TutorialPageState extends State<TutorialPage>
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
+    _audioPlayer.playerStateStream.listen((state) {
+      setState(() {
+        _isPlaying = state.playing;
+      });
+    });
+
     _swingAnimation = Tween<double>(
       begin: -15.0,
       end: 15.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    // Random flipping every few seconds
     _flipTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       setState(() {
         _isFlipped = Random().nextBool(); // flip randomly
@@ -91,6 +156,7 @@ class _TutorialPageState extends State<TutorialPage>
     final content = widget.subtopic.tutorials[currentIndex];
     final isLastPage = currentIndex == widget.subtopic.tutorials.length - 1;
     double screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -132,12 +198,25 @@ class _TutorialPageState extends State<TutorialPage>
                       ),
                     );
                   },
-                  child: Image.asset(
-                    content.imagePath,
-                    // height: 250,
-                    height: screenWidth * 1.8,
-                    fit: BoxFit.contain,
-                  ),
+                  child:
+                      isUrl(content.imagePath)
+                          ? CachedNetworkImage(
+                            imageUrl: content.imagePath,
+                            height: screenWidth * 1.8,
+                            fit: BoxFit.contain,
+                            placeholder:
+                                (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                            errorWidget:
+                                (context, url, error) =>
+                                    const Icon(Icons.broken_image),
+                          )
+                          : Image.asset(
+                            content.imagePath,
+                            fit: BoxFit.contain,
+                            height: screenWidth * 1.8,
+                          ),
                 ),
               ),
             ),
@@ -184,12 +263,20 @@ class _TutorialPageState extends State<TutorialPage>
 
                 // Speaker Icon (audio playback)
                 IconButton(
-                  icon: const Icon(
-                    Icons.multitrack_audio_rounded,
+                  icon: Icon(
+                    _isPlaying
+                        ? Icons.pause_circle_filled_rounded
+                        : Icons.play_circle_filled_rounded,
                     size: 60,
                     color: Colors.deepOrange,
                   ),
-                  onPressed: _playAudio,
+                  onPressed: () {
+                    if (_isPlaying) {
+                      _pauseAudio();
+                    } else {
+                      _playAudio();
+                    }
+                  },
                 ),
 
                 // Next Arrow or Done Button

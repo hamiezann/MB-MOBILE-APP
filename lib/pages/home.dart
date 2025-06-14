@@ -1,14 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/authentications/login.dart';
 import 'dart:async'; // Add this at the top
 import 'package:math_buddy_v1/components/sidebar.dart';
 import 'package:math_buddy_v1/models/chapter_model.dart';
+import 'package:math_buddy_v1/pages/audio_helper.dart';
 import 'package:math_buddy_v1/pages/chapters-tutorial/chapter.dart';
 import 'package:math_buddy_v1/pages/chapters-tutorial/subtopic_page.dart';
 import 'package:math_buddy_v1/pages/profile.dart';
 import 'package:math_buddy_v1/pages/progress.dart';
 import 'package:math_buddy_v1/components/reusable-modal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,6 +24,27 @@ class _HomePageState extends State<HomePage> {
   Chapter? _selectedChapter;
   final PageController _pageController = PageController();
   int _selectedIndex = 0;
+  String? teacherNo;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTeacherNo();
+  }
+
+  Future<void> _loadTeacherNo() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      setState(() {
+        teacherNo = doc.data()?['teacher_no'];
+        isLoading = false;
+      });
+    }
+    // print('store teacher no $teacherNo');
+  }
 
   void _navigateToPage(int index) {
     setState(() {
@@ -37,17 +61,13 @@ class _HomePageState extends State<HomePage> {
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-
-    // Wait for a short duration to allow the dialog to build
     await Future.delayed(Duration(milliseconds: 100));
-
-    // Perform sign out
     await FirebaseAuth.instance.signOut();
-
-    // Dismiss loading
+    await AudioCacheHelper.clearAllCachedAudio();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
     Navigator.of(context).pop();
 
-    // Navigate to login page
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -68,9 +88,8 @@ class _HomePageState extends State<HomePage> {
     return WillPopScope(
       onWillPop: () async {
         bool shouldExit = await _showExitDialog();
-        return shouldExit; // true = exit app, false = stay
+        return shouldExit;
       },
-      // onWillPop: _showExitDialog,
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -110,13 +129,18 @@ class _HomePageState extends State<HomePage> {
         ),
 
         body:
-            _selectedChapter != null
-                ? SubtopicPage(chapter: _selectedChapter!)
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _selectedChapter != null
+                ? SubtopicPage(chapter: _selectedChapter!, teacherNo: teacherNo)
                 : PageView(
                   controller: _pageController,
                   physics: NeverScrollableScrollPhysics(),
                   children: [
-                    TopicPage(onChapterSelected: _navigateToSubtopicPage),
+                    TopicPage(
+                      onChapterSelected: _navigateToSubtopicPage,
+                      teacherNo: teacherNo,
+                    ),
                     ProfilePage(),
                     ProgressPage(),
                   ],
@@ -125,27 +149,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Future<bool> _showExitDialog() async {
-  //   return await showDialog(
-  //         context: context,
-  //         builder:
-  //             (context) => AlertDialog(
-  //               title: const Text('Exit App'),
-  //               content: const Text('Are you sure you want to exit the app?'),
-  //               actions: [
-  //                 TextButton(
-  //                   onPressed: () => Navigator.of(context).pop(false),
-  //                   child: const Text('Cancel'),
-  //                 ),
-  //                 TextButton(
-  //                   onPressed: () => Navigator.of(context).pop(true),
-  //                   child: const Text('Exit'),
-  //                 ),
-  //               ],
-  //             ),
-  //       ) ??
-  //       false; // fallback false if dialog is dismissed
-  // }
   Future<bool> _showExitDialog() async {
     return await showDialog<bool>(
           context: context,

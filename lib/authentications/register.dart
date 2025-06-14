@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/authentications/login.dart';
 import 'package:math_buddy_v1/pages/home.dart';
+import 'package:math_buddy_v1/pages/teacher/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,6 +20,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  String _selectedRole = 'student';
+  String _studentId = '';
+  final TextEditingController _teacherIdController = TextEditingController();
+  final TextEditingController _classIdController = TextEditingController();
   bool _agreeToTerms = false;
 
   @override
@@ -57,69 +63,79 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  Future<void> _saveUserSession(String userId, String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userId);
+    await prefs.setString('role', role);
+  }
+
   void _registerUser() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
     final username = _usernameController.text.trim();
+    final classIdInput = _classIdController.text.trim();
 
     if (password != confirmPassword) {
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Kata Laluan Tidak Sama'),
-              content: const Text('Kata laluan tidak sepadan. Sila cuba lagi.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Ok'),
-                ),
-              ],
-            ),
+      _showAlert(
+        "Kata Laluan Tidak Sama",
+        "Kata laluan tidak sepadan. Sila cuba lagi.",
       );
       return;
+    }
+
+    String userId = '';
+    String? classId; // Will be null for teachers
+
+    if (_selectedRole == 'student') {
+      final randomNum = DateTime.now().millisecondsSinceEpoch % 10000;
+      userId = 'STUDENT_$randomNum';
+      // classId = classIdInput;
+    } else {
+      userId = _teacherIdController.text.trim();
+      if (userId.isEmpty) {
+        _showAlert("ID Guru Diperlukan", "Sila masukkan ID guru.");
+        return;
+      }
     }
 
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
+      final userData = {
+        'username': username,
+        'email': email,
+        'role': _selectedRole,
+        'id': userId,
+        'score': {
+          'kenal_objek': '0/10',
+          'susun_nombor': '0/10',
+          'mengira_tambah': '0/10',
+          'mengira_tolak': '0/10',
+          'wang': '0/10',
+          'masa': '0/10',
+        },
+        if (_selectedRole == 'student') 'teacher_no': '',
+      };
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
-          .set({
-            'username': username,
-            'email': email,
-            'score': {
-              'kenal_objek': '0/10',
-              'susun_nombor': '0/10',
-              'mengira_tambah': '0/10',
-              'mengira_tolak': '0/10',
-              'wang': '0/10',
-              'masa': '0/10',
-            },
-          });
+          .set(userData);
+
+      await _saveUserSession(userId, _selectedRole);
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  _selectedRole == 'teacher' ? TeacherHomePage() : HomePage(),
+        ),
       );
     } catch (e) {
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Error'),
-              content: Text(e.toString()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Ok'),
-                ),
-              ],
-            ),
-      );
+      _showAlert("Ralat", e.toString());
     }
   }
 
@@ -183,6 +199,194 @@ class _RegisterPageState extends State<RegisterPage> {
                             ],
                           ),
                           SizedBox(height: screenHeight * 0.04),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // _buildLabel("Peranan", screenWidth),
+                              // Row(
+                              //   mainAxisAlignment:
+                              //       MainAxisAlignment.spaceEvenly,
+                              //   children: [
+                              //     ChoiceChip(
+                              //       label: const Text("Pelajar"),
+                              //       selected: _selectedRole == 'student',
+                              //       onSelected: (selected) {
+                              //         if (selected) {
+                              //           setState(() {
+                              //             _selectedRole = 'student';
+                              //           });
+                              //         }
+                              //       },
+                              //     ),
+                              //     ChoiceChip(
+                              //       label: const Text("Guru"),
+                              //       selected: _selectedRole == 'teacher',
+                              //       onSelected: (selected) {
+                              //         if (selected) {
+                              //           setState(() {
+                              //             _selectedRole = 'teacher';
+                              //           });
+                              //         }
+                              //       },
+                              //     ),
+                              //   ],
+                              // ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(25),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                  color: Colors.grey.shade100,
+                                ),
+                                padding: const EdgeInsets.all(4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedRole = 'student';
+                                          });
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          curve: Curves.easeInOut,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 20,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            color:
+                                                _selectedRole == 'student'
+                                                    ? Colors.lightBlue
+                                                    // Theme.of(
+                                                    //   context,
+                                                    // ).primaryColor
+                                                    : Colors.transparent,
+                                            boxShadow:
+                                                _selectedRole == 'student'
+                                                    ? [
+                                                      BoxShadow(
+                                                        color: Theme.of(context)
+                                                            .primaryColor
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 8,
+                                                        offset: const Offset(
+                                                          0,
+                                                          2,
+                                                        ),
+                                                      ),
+                                                    ]
+                                                    : [],
+                                          ),
+                                          child: Center(
+                                            child: AnimatedDefaultTextStyle(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              style: TextStyle(
+                                                color:
+                                                    _selectedRole == 'student'
+                                                        ? Colors.white
+                                                        : Colors.grey.shade700,
+                                                fontWeight:
+                                                    _selectedRole == 'student'
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w500,
+                                                fontSize: 14,
+                                              ),
+                                              child: const Text("Pelajar"),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedRole = 'teacher';
+                                          });
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          curve: Curves.easeInOut,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 20,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            color:
+                                                _selectedRole == 'teacher'
+                                                    ? Colors.amber
+                                                    : Colors.transparent,
+                                            boxShadow:
+                                                _selectedRole == 'teacher'
+                                                    ? [
+                                                      BoxShadow(
+                                                        color: Theme.of(context)
+                                                            .primaryColor
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 8,
+                                                        offset: const Offset(
+                                                          0,
+                                                          2,
+                                                        ),
+                                                      ),
+                                                    ]
+                                                    : [],
+                                          ),
+                                          child: Center(
+                                            child: AnimatedDefaultTextStyle(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              style: TextStyle(
+                                                color:
+                                                    _selectedRole == 'teacher'
+                                                        ? Colors.white
+                                                        : Colors.grey.shade700,
+                                                fontWeight:
+                                                    _selectedRole == 'teacher'
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w500,
+                                                fontSize: 14,
+                                              ),
+                                              child: const Text("Guru"),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              if (_selectedRole == 'teacher')
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildLabel("ID Guru", screenWidth),
+                                    SizedBox(height: 10),
+                                    _buildTextField(_teacherIdController),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
 
                           // Username
                           _buildLabel("Nama Pengguna", screenWidth),
@@ -324,6 +528,23 @@ class _RegisterPageState extends State<RegisterPage> {
           style: TextStyle(fontSize: screenWidth * 0.045, color: Colors.black),
         ),
       ),
+    );
+  }
+
+  void _showAlert(String title, String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Ok'),
+              ),
+            ],
+          ),
     );
   }
 

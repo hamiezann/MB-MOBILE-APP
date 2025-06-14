@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/authentications/forgot_password.dart';
 import 'package:math_buddy_v1/authentications/register.dart';
 import 'package:math_buddy_v1/pages/home.dart';
+import 'package:math_buddy_v1/pages/teacher/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -218,15 +221,54 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      final String userId = userCredential.user!.uid;
+
+      // Fetch user data from Firestore
+      final DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
+
+      if (!userDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pengguna tidak dijumpai di Firestore')),
+        );
+        return;
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final String role = userData['role'] ?? 'student';
+      final String id = userData['id'] ?? '';
+      final String teacherNo = userData['teacher_no'] ?? '';
+
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('role', role);
+      await prefs.setString('id', id);
+      await prefs.setString('teacher_no', teacherNo);
+
+      // print("Stored role: $role");
+      // print("Stored teacher_no: $teacherNo");
+      // print("Stored teacher_no: $id");
+
+      // Navigate based on role
+      if (role == 'teacher') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TeacherHomePage(),
+          ), // Replace with TeacherPage if needed
+        );
+      } else if (role == 'student') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       String message = switch (e.code) {
         'user-not-found' => 'Tiada pengguna dijumpai dengan emel tersebut.',

@@ -25,17 +25,37 @@ class Subtopic {
 }
 
 class Chapter {
+  final String id;
   final String title;
   final List<Subtopic> subtopics;
   final String quizTitle;
   final List<QuizContent> quizQuestions;
   final String videoUrl;
+  final String imagePath;
 
   Chapter({
+    required this.id,
     required this.title,
     required this.subtopics,
     required this.quizTitle,
     required this.quizQuestions,
     required this.videoUrl,
+    required this.imagePath,
   });
 }
+
+// class DynamicChapter {
+//   final String id;
+//   final String title;
+//   final String description;
+//   final String imagePath;
+//   final String status;
+
+//   DynamicChapter({
+//     required this.id,
+//     required this.title,
+//     required this.description,
+//     required this.imagePath,
+//     required this.status,
+//   });
+// }

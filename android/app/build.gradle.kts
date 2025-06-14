@@ -31,6 +31,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true 
     }
 
     buildTypes {
@@ -40,7 +41,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+
 }
+
 
 flutter {
     source = "../.."

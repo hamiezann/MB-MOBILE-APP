@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/models/quiz_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +7,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class QuizPage extends StatefulWidget {
   final List<QuizContent> questions;
   final String quizTitle;
-  const QuizPage({super.key, required this.quizTitle, required this.questions});
+  final String? teacherNo;
+  final String? quizId;
+  const QuizPage({
+    super.key,
+    required this.quizTitle,
+    required this.questions,
+    required this.teacherNo,
+    required this.quizId,
+  });
 
   @override
   State<QuizPage> createState() => _QuizPageState();
@@ -17,11 +26,13 @@ class _QuizPageState extends State<QuizPage> {
   int score = 0;
   bool answered = false;
   String? selectedAnswer;
-  String _getBadge(int score) {
-    if (score >= 9) return 'Cemerlang';
-    if (score >= 7) return 'Syabas';
-    if (score >= 5) return 'Bagus';
-    return 'Cuba Lagi';
+  String _getBadge(int score, int total) {
+    double percentage = (score / total) * 100;
+
+    if (percentage >= 90) return 'Cemerlang'; // Excellent
+    if (percentage >= 70) return 'Syabas'; // Great
+    if (percentage >= 50) return 'Bagus'; // Good
+    return 'Cuba Lagi'; // Try Again
   }
 
   void _checkAnswer(String answer) {
@@ -48,6 +59,10 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
+  bool isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
   void _showScoreDialog() {
     _updateQuizResult();
     showDialog(
@@ -60,7 +75,7 @@ class _QuizPageState extends State<QuizPage> {
               children: [
                 Text('Skor anda: $score / ${widget.questions.length}'),
                 const SizedBox(height: 10),
-                Text('Lencana: ${_getBadge(score)}'),
+                Text('Lencana: ${_getBadge(score, widget.questions.length)}'),
               ],
             ),
             actions: [
@@ -107,7 +122,7 @@ class _QuizPageState extends State<QuizPage> {
             Expanded(
               child:
                   question.imagePaths.length == 1
-                      ? Image.asset(question.imagePaths[0], fit: BoxFit.contain)
+                      ? _buildImageWidget(question.imagePaths[0])
                       : Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children:
@@ -116,10 +131,7 @@ class _QuizPageState extends State<QuizPage> {
                                   (img) => Expanded(
                                     child: Padding(
                                       padding: const EdgeInsets.all(8.0),
-                                      child: Image.asset(
-                                        img,
-                                        fit: BoxFit.contain,
-                                      ),
+                                      child: _buildImageWidget(img),
                                     ),
                                   ),
                                 )
@@ -167,6 +179,20 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
+  Widget _buildImageWidget(String path) {
+    if (isUrl(path)) {
+      return CachedNetworkImage(
+        imageUrl: path,
+        placeholder:
+            (context, url) => const Center(child: CircularProgressIndicator()),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
+        fit: BoxFit.contain,
+      );
+    } else {
+      return Image.asset(path, fit: BoxFit.contain);
+    }
+  }
+
   Future<void> _updateQuizResult() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -176,25 +202,30 @@ class _QuizPageState extends State<QuizPage> {
         .doc(user.uid);
     final quizKey = widget.quizTitle.toLowerCase().replaceAll(' ', '_');
     final totalQuestions = widget.questions.length;
-    final badge = _getBadge(score);
-
+    final badge = _getBadge(score, totalQuestions);
     final newScoreFormatted = "$score/$totalQuestions";
 
     final userSnapshot = await userDoc.get();
     final existingScoreRaw = userSnapshot.data()?['score']?[quizKey];
 
-    // Convert existing score from "x/y" to int x for comparison
     int existingRaw = 0;
     if (existingScoreRaw != null && existingScoreRaw is String) {
       final parts = existingScoreRaw.split('/');
       if (parts.isNotEmpty) existingRaw = int.tryParse(parts[0]) ?? 0;
     }
-
     if (score > existingRaw) {
-      await userDoc.set({
+      final Map<String, dynamic> updateData = {
         'score': {quizKey: newScoreFormatted},
         'badge': {quizKey: badge},
-      }, SetOptions(merge: true));
+      };
+
+      if (widget.teacherNo != null && widget.teacherNo!.isNotEmpty) {
+        updateData['teacher_quiz'] = {
+          quizKey: {'teacher_no': widget.teacherNo!, 'quiz_id': widget.quizId},
+        };
+      }
+
+      await userDoc.set(updateData, SetOptions(merge: true));
     }
   }
 }

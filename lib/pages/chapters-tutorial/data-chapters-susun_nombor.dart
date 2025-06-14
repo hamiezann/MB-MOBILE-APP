@@ -2,6 +2,8 @@ import 'package:math_buddy_v1/models/chapter_model.dart';
 import 'package:math_buddy_v1/models/quiz_questions.dart';
 
 final SusunNomborChapter = Chapter(
+  id: '3',
+  imagePath: '',
   title: 'SUSUN NOMBOR',
   subtopics: [
     Subtopic(

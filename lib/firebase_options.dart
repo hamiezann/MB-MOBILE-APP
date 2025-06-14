@@ -44,9 +44,9 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: '{{your api key}}',
-    appId: '{{your app id}}',
-    messagingSenderId: '',
+    apiKey: 'AIzaSyC_adhKzqa7sXFrUrCIJcUX3lHTrsCkIBY',
+    appId: '1:203773234403:web:2f73614e997bf0efd109d6',
+    messagingSenderId: '203773234403',
     projectId: 'mathbuddy-v1',
     authDomain: 'mathbuddy-v1.firebaseapp.com',
     storageBucket: 'mathbuddy-v1.firebasestorage.app',
@@ -54,26 +54,26 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: '{{your api key}}',
-    appId: '{{your app id}}',
+    apiKey: 'AIzaSyAOw1rEwXaTfwSV8FtRRloQKMtRgGdchxM',
+    appId: '1:203773234403:android:fd3c1205e9d25621d109d6',
     messagingSenderId: '203773234403',
     projectId: 'mathbuddy-v1',
     storageBucket: 'mathbuddy-v1.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: '{{your api key}}',
-    appId: '{{your app id}}',
-    messagingSenderId: '',
+    apiKey: 'AIzaSyCi05GurrKwgscyeCRdiU6Y7vspD4oH-IE',
+    appId: '1:203773234403:ios:7ffee371d8c14c11d109d6',
+    messagingSenderId: '203773234403',
     projectId: 'mathbuddy-v1',
     storageBucket: 'mathbuddy-v1.firebasestorage.app',
     iosBundleId: 'com.example.mathBuddyV1',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: '{{your api key}}',
-    appId: '{{your app id}}',
-    messagingSenderId: '',
+    apiKey: 'AIzaSyC_adhKzqa7sXFrUrCIJcUX3lHTrsCkIBY',
+    appId: '1:203773234403:web:59960002333fa463d109d6',
+    messagingSenderId: '203773234403',
     projectId: 'mathbuddy-v1',
     authDomain: 'mathbuddy-v1.firebaseapp.com',
     storageBucket: 'mathbuddy-v1.firebasestorage.app',

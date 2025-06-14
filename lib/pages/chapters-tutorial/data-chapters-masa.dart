@@ -2,6 +2,8 @@ import 'package:math_buddy_v1/models/chapter_model.dart';
 import 'package:math_buddy_v1/models/quiz_questions.dart';
 
 final MasaChapter = Chapter(
+  id: '2',
+  imagePath: '',
   title: 'MASA',
   subtopics: [
     Subtopic(

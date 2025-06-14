@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class TopicCard extends StatelessWidget {
@@ -11,6 +12,10 @@ class TopicCard extends StatelessWidget {
     required this.onTap,
     super.key,
   });
+
+  bool isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +36,40 @@ class TopicCard extends StatelessWidget {
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(imagePath, fit: BoxFit.contain),
+                  child:
+                      // isUrl(imagePath)
+                      //     ? Image.network(
+                      //       imagePath,
+                      //       fit: BoxFit.contain,
+                      //       loadingBuilder: (context, child, loadingProgress) {
+                      //         if (loadingProgress == null) return child;
+                      //         return const Center(
+                      //           child: CircularProgressIndicator(),
+                      //         );
+                      //       },
+                      //       errorBuilder:
+                      //           (context, error, stackTrace) =>
+                      //               const Icon(Icons.broken_image),
+                      //     )
+                      //     : Image.asset(imagePath, fit: BoxFit.contain),
+                      isUrl(imagePath)
+                          ? CachedNetworkImage(
+                            imageUrl: imagePath,
+                            // height: screenWidth * 1.8,
+                            fit: BoxFit.contain,
+                            placeholder:
+                                (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                            errorWidget:
+                                (context, url, error) =>
+                                    const Icon(Icons.broken_image),
+                          )
+                          : Image.asset(
+                            imagePath,
+                            fit: BoxFit.contain,
+                            // height: screenWidth * 1.8,
+                          ),
                 ),
               ),
               const SizedBox(height: 10),
