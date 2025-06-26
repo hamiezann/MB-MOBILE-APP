@@ -54,8 +54,29 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     _fetchUserData();
   }
 
+  // Future<void> _fetchStudents() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final querySnapshot =
+  //       await FirebaseFirestore.instance
+  //           .collection('users')
+  //           .where('role', isEqualTo: 'student')
+  //           .where(
+  //             'teacher_no',
+  //             isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+  //           )
+  //           .get();
+  //   setState(() {
+  //     _students =
+  //         querySnapshot.docs.map((doc) {
+  //           final data = doc.data() as Map<String, dynamic>;
+  //           data['uid'] = doc.id; // Firestore document ID
+  //           return data;
+  //         }).toList();
+  //     _loading = false;
+  //   });
+  // }
+
   Future<void> _fetchStudents() async {
-    final prefs = await SharedPreferences.getInstance();
     final querySnapshot =
         await FirebaseFirestore.instance
             .collection('users')
@@ -65,35 +86,35 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               isEqualTo: FirebaseAuth.instance.currentUser!.uid,
             )
             .get();
+
     setState(() {
       _students =
           querySnapshot.docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            data['uid'] = doc.id; // Firestore document ID
+            data['uid'] = doc.id;
+
+            // Only extract teacher_quiz marks
+            final teacherQuiz =
+                data['teacher_quiz'] as Map<String, dynamic>? ?? {};
+
+            // Optional: Flatten teacher_quiz to show quiz_name and score if needed
+            final Map<String, dynamic> teacherQuizScores = {};
+            for (final entry in teacherQuiz.entries) {
+              final quizName = entry.key;
+              final quizData = entry.value as Map<String, dynamic>;
+              final quizScore =
+                  data['score']?[quizName]; // Fetch score from main 'score' map
+              teacherQuizScores[quizName] = quizScore ?? 'N/A';
+            }
+
+            data['teacher_quiz_scores'] =
+                teacherQuizScores; // For UI display or use
             return data;
           }).toList();
+
       _loading = false;
     });
   }
-
-  // Future<void> _fetchChapters() async {
-  //   final uid = FirebaseAuth.instance.currentUser?.uid;
-  //   final snapshot =
-  //       await FirebaseFirestore.instance
-  //           .collection('chapters')
-  //           .where('owner_id', isEqualTo: uid)
-  //           .get();
-
-  //   setState(() {
-  //     _chapters =
-  //         snapshot.docs.map((doc) {
-  //           final data = doc.data();
-  //           data['id'] = doc.id;
-  //           return data;
-  //         }).toList();
-
-  //   });
-  // }
 
   Future<void> _fetchChapters() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -706,7 +727,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   }
 
   Widget _buildStudentCard(Map<String, dynamic> student) {
-    final scoreMap = (student['score'] as Map<String, dynamic>?) ?? {};
+    final scoreMap =
+        (student['teacher_quiz_scores'] as Map<String, dynamic>?) ?? {};
     int totalMarks = 0;
     int obtainedMarks = 0;
 

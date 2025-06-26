@@ -23,7 +23,16 @@ class TopicPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return teacherNo == null || teacherNo!.isEmpty
-        ? _buildHardCodedContent()
+        ? Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade700, Colors.lightBlue.shade300],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Center(child: Text("TIADA KELAS DIDAFTARKAN!")),
+        )
         : _buildFirebaseContent();
   }
 

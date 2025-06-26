@@ -34,12 +34,12 @@ class _TutorialPageState extends State<TutorialPage>
       setState(() => _isPlaying = true);
       await _audioPlayer.stop();
 
-      if (isUrl(audioPath)) {
-        final file = await AudioCacheHelper.downloadAndCacheAudio(audioPath);
-        await _audioPlayer.setFilePath(file.path);
-      } else {
-        await _audioPlayer.setAsset('assets/$audioPath');
-      }
+      // if (isUrl(audioPath)) {
+      final file = await AudioCacheHelper.downloadAndCacheAudio(audioPath);
+      await _audioPlayer.setFilePath(file.path);
+      // } else {
+      //   await _audioPlayer.setAsset('assets/$audioPath');
+      // }
 
       await _audioPlayer.play();
     } catch (e) {
@@ -61,7 +61,7 @@ class _TutorialPageState extends State<TutorialPage>
             ],
           ),
           backgroundColor: Colors.red.shade600,
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -120,9 +120,9 @@ class _TutorialPageState extends State<TutorialPage>
     Navigator.pop(context);
   }
 
-  bool isUrl(String path) {
-    return path.startsWith('http://') || path.startsWith('https://');
-  }
+  // bool isUrl(String path) {
+  //   return path.startsWith('http://') || path.startsWith('https://');
+  // }
 
   @override
   void initState() {
@@ -199,24 +199,23 @@ class _TutorialPageState extends State<TutorialPage>
                     );
                   },
                   child:
-                      isUrl(content.imagePath)
-                          ? CachedNetworkImage(
-                            imageUrl: content.imagePath,
-                            height: screenWidth * 1.8,
-                            fit: BoxFit.contain,
-                            placeholder:
-                                (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                            errorWidget:
-                                (context, url, error) =>
-                                    const Icon(Icons.broken_image),
-                          )
-                          : Image.asset(
-                            content.imagePath,
-                            fit: BoxFit.contain,
-                            height: screenWidth * 1.8,
-                          ),
+                  // isUrl(content.imagePath)
+                  //     ?
+                  CachedNetworkImage(
+                    imageUrl: content.imagePath,
+                    height: screenWidth * 1.8,
+                    fit: BoxFit.contain,
+                    placeholder:
+                        (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                    errorWidget:
+                        (context, url, error) => const Icon(Icons.broken_image),
+                  ),
+                  // : Image.asset(
+                  //   content.imagePath,
+                  //   fit: BoxFit.contain,
+                  //   height: screenWidth * 1.8,
+                  // ),
                 ),
               ),
             ),

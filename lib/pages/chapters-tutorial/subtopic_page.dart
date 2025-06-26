@@ -23,8 +23,6 @@ class SubtopicPage extends StatefulWidget {
 }
 
 class _SubtopicPageState extends State<SubtopicPage> {
-  // late VideoPlayerController _controller;
-
   late VideoPlayerController _videoPlayerController;
   ChewieController? _chewieController;
 
@@ -36,16 +34,16 @@ class _SubtopicPageState extends State<SubtopicPage> {
   @override
   void initState() {
     super.initState();
-    if (isUrl(widget.chapter.videoUrl)) {
-      _fetchVideoSUbtopic();
-    } else {
-      _videoPlayerController = VideoPlayerController.asset(
-          widget.chapter.videoUrl,
-        )
-        ..initialize().then((_) {
-          setState(() {});
-        });
-    }
+    // if (isUrl(widget.chapter.videoUrl)) {
+    _fetchVideoSUbtopic();
+    // } else {
+    //   _videoPlayerController = VideoPlayerController.asset(
+    //       widget.chapter.videoUrl,
+    //     )
+    //     ..initialize().then((_) {
+    //       setState(() {});
+    //     });
+    // }
     _fetchChapterQuizzes();
   }
 
@@ -83,9 +81,6 @@ class _SubtopicPageState extends State<SubtopicPage> {
         _videoPlayerController = VideoPlayerController.networkUrl(
           Uri.parse(downloadUrl),
         );
-        // ..initialize().then((_) {
-        //   setState(() {});
-        // });
         await _videoPlayerController.initialize();
         _chewieController = ChewieController(
           videoPlayerController: _videoPlayerController,
@@ -95,13 +90,15 @@ class _SubtopicPageState extends State<SubtopicPage> {
           allowPlaybackSpeedChanging: true,
           showControls: true,
         );
-
         setState(() {});
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal muat turun video')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal muat turun video'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -124,6 +121,7 @@ class _SubtopicPageState extends State<SubtopicPage> {
               Text('Video tidak tersedia untuk bab ini.'),
             ],
           ),
+          duration: const Duration(seconds: 1),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -244,9 +242,9 @@ class _SubtopicPageState extends State<SubtopicPage> {
     );
   }
 
-  bool isUrl(String path) {
-    return path.startsWith('http://') || path.startsWith('https://');
-  }
+  // bool isUrl(String path) {
+  //   return path.startsWith('http://') || path.startsWith('https://');
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -307,6 +305,7 @@ class _SubtopicPageState extends State<SubtopicPage> {
                                   Text('Tiada konten untuk Subtopik ini.'),
                                 ],
                               ),
+                              duration: const Duration(seconds: 2),
                               backgroundColor: Colors.orange,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -331,26 +330,27 @@ class _SubtopicPageState extends State<SubtopicPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            isUrl(subtopic.imagePath)
-                                ? CachedNetworkImage(
-                                  imageUrl: subtopic.imagePath,
-                                  height: screenHeight * 0.15,
-                                  width: screenWidth * 0.3,
-                                  fit: BoxFit.contain,
-                                  placeholder:
-                                      (context, url) => const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                  errorWidget:
-                                      (context, url, error) =>
-                                          const Icon(Icons.broken_image),
-                                )
-                                : Image.asset(
-                                  subtopic.imagePath,
-                                  fit: BoxFit.contain,
-                                  height: screenHeight * 0.15,
-                                  width: screenWidth * 0.3,
-                                ),
+                            // isUrl(subtopic.imagePath)
+                            //     ?
+                            CachedNetworkImage(
+                              imageUrl: subtopic.imagePath,
+                              height: screenHeight * 0.15,
+                              width: screenWidth * 0.3,
+                              fit: BoxFit.contain,
+                              placeholder:
+                                  (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                              errorWidget:
+                                  (context, url, error) =>
+                                      const Icon(Icons.broken_image),
+                            ),
+                            // : Image.asset(
+                            //   subtopic.imagePath,
+                            //   fit: BoxFit.contain,
+                            //   height: screenHeight * 0.15,
+                            //   width: screenWidth * 0.3,
+                            // ),
                             Text(
                               subtopic.title,
                               textAlign: TextAlign.center,
@@ -472,6 +472,7 @@ class _SubtopicPageState extends State<SubtopicPage> {
               Text('Tiada kuiz untuk bab ini.'),
             ],
           ),
+          duration: const Duration(seconds: 2),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -612,6 +613,7 @@ class _SubtopicPageState extends State<SubtopicPage> {
                                           Text('Tiada soalan untuk kuiz ini.'),
                                         ],
                                       ),
+                                      duration: const Duration(seconds: 2),
                                       backgroundColor: Colors.orange,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
@@ -654,6 +656,7 @@ class _SubtopicPageState extends State<SubtopicPage> {
                                         ),
                                       ],
                                     ),
+                                    duration: const Duration(seconds: 2),
                                     backgroundColor: Colors.red,
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(

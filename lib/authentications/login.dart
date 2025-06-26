@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/authentications/forgot_password.dart';
 import 'package:math_buddy_v1/authentications/register.dart';
+import 'package:math_buddy_v1/authentications/role.dart';
 import 'package:math_buddy_v1/pages/home.dart';
 import 'package:math_buddy_v1/pages/teacher/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-
+  String _selectedRole = 'student';
   @override
   void initState() {
     super.initState();
@@ -67,7 +68,15 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.04),
-
+                RoleSelector(
+                  selectedRole: _selectedRole,
+                  onRoleChanged: (role) {
+                    setState(() {
+                      _selectedRole = role;
+                    });
+                  },
+                ),
+                SizedBox(height: 20),
                 // Email Label
                 Align(
                   alignment: Alignment.centerLeft,

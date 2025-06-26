@@ -9,6 +9,7 @@ class ProgressPage extends StatelessWidget {
   Future<Map<String, dynamic>> fetchUserProgress() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return {};
+
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
@@ -21,134 +22,158 @@ class ProgressPage extends StatelessWidget {
     final teacherQuizzes = Map<String, dynamic>.from(
       userData['teacher_quiz'] ?? {},
     );
-
-    print("Raw teacher_quiz data: $teacherQuizzes");
-    print("score: $rawScores");
-    print("badge: $rawBadges");
+    final quizAttempts = Map<String, dynamic>.from(
+      userData['quiz_attempts'] ?? {},
+    );
 
     final scores = <String, String>{};
     final badges = <String, String>{};
-
-    // Handle static (non-teacher) quizzes
-    // (rawScores as Map).forEach((key, value) {
-    //   scores[key.toString()] = value.toString();
-    // });
-    // (rawBadges as Map).forEach((key, value) {
-    //   badges[key.toString()] = value.toString();
-    // });
-
-    // Store titles from teacher-created quizzes
     final dynamicChapters = <String>[];
+    final attemptsInfo = <String, List<Map<String, dynamic>>>{};
 
-    // if (teacherNo != null && teacherNo.toString().isNotEmpty) {
-    //   for (var quizKey in teacherQuizzes.keys) {
-    //     final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
-    //     final quizId = info['quiz_id'];
-    //     if (quizId != null) {
-    //       // Fetch quiz document using teacherNo and quizId
-    //       final quizDoc =
-    //           await FirebaseFirestore.instance
-    //               .collection('chapters')
-    //               .where('owner_id', isEqualTo: teacherNo)
-    //               .get();
+    for (var quizKey in teacherQuizzes.keys) {
+      final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
+      final quizId = info['quiz_id'];
 
-    //       for (var chapter in quizDoc.docs) {
-    //         final quizRef = FirebaseFirestore.instance
-    //             .collection('chapters')
-    //             .doc(chapter.id)
-    //             .collection('quizzes')
-    //             .doc(quizId);
-
-    //         final quizSnapshot = await quizRef.get();
-    //         if (quizSnapshot.exists) {
-    //           final quizData = quizSnapshot.data();
-    //           final quizTitle = quizData?['title'] ?? quizKey;
-
-    //           dynamicChapters.add(quizTitle);
-    //           // Inject score and badge by quiz title
-    //           if (rawScores.containsKey(quizKey)) {
-    //             scores[quizTitle] = rawScores[quizKey];
-    //           }
-    //           if (rawBadges.containsKey(quizKey)) {
-    //             badges[quizTitle] = rawBadges[quizKey];
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-
-    //   return {
-    //     'scores': scores,
-    //     'badges': badges,
-    //     'chapters': dynamicChapters,
-    //     'teacher_quiz': teacherQuizzes,
-    //   };
-    // }
-
-    if (teacherNo != null && teacherNo.toString().isNotEmpty) {
-      for (var quizKey in teacherQuizzes.keys) {
-        final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
-        final quizId = info['quiz_id'];
-        if (quizId != null) {
-          final quizDoc =
-              await FirebaseFirestore.instance
-                  .collection('chapters')
-                  .where('owner_id', isEqualTo: teacherNo)
-                  .get();
-
-          for (var chapter in quizDoc.docs) {
-            final quizRef = FirebaseFirestore.instance
+      if (quizId != null) {
+        final chapterSnapshot =
+            await FirebaseFirestore.instance
                 .collection('chapters')
-                .doc(chapter.id)
-                .collection('quizzes')
-                .doc(quizId);
+                .where('owner_id', isEqualTo: teacherNo)
+                .get();
 
-            final quizSnapshot = await quizRef.get();
-            if (quizSnapshot.exists) {
-              final quizData = quizSnapshot.data();
-              final quizTitle = quizData?['title'] ?? quizKey;
+        for (var chapter in chapterSnapshot.docs) {
+          final quizRef = FirebaseFirestore.instance
+              .collection('chapters')
+              .doc(chapter.id)
+              .collection('quizzes')
+              .doc(quizId);
 
-              dynamicChapters.add(quizTitle);
-              if (rawScores.containsKey(quizKey)) {
-                scores[quizTitle] = rawScores[quizKey].toString();
-              }
-              if (rawBadges.containsKey(quizKey)) {
-                badges[quizTitle] = rawBadges[quizKey].toString();
-              }
+          final quizSnapshot = await quizRef.get();
+          if (quizSnapshot.exists) {
+            final quizData = quizSnapshot.data();
+            final quizTitle = quizData?['title'] ?? quizKey;
+
+            dynamicChapters.add(quizTitle);
+
+            if (rawScores.containsKey(quizKey)) {
+              scores[quizTitle] = rawScores[quizKey].toString();
+            }
+
+            if (rawBadges.containsKey(quizKey)) {
+              badges[quizTitle] = rawBadges[quizKey].toString();
+            }
+
+            if (quizAttempts.containsKey(quizKey)) {
+              final attemptsRaw = quizAttempts[quizKey] as List;
+              final parsedAttempts =
+                  attemptsRaw.map((e) => Map<String, dynamic>.from(e)).toList();
+              attemptsInfo[quizTitle] = parsedAttempts;
             }
           }
         }
       }
-
-      return {
-        'scores': scores,
-        'badges': badges,
-        'chapters': dynamicChapters,
-        'teacher_quiz': teacherQuizzes,
-      };
-    } else {
-      (rawScores as Map).forEach((key, value) {
-        scores[key.toString()] = value.toString();
-      });
-      (rawBadges as Map).forEach((key, value) {
-        badges[key.toString()] = value.toString();
-      });
     }
 
     return {
       'scores': scores,
       'badges': badges,
-      'chapters': [
-        'kenal_objek',
-        'susun_nombor',
-        'mengira_tambah',
-        'mengira_tolak',
-        'wang',
-        'masa',
-      ],
-      'teacher_quiz': {},
+      'chapters': dynamicChapters,
+      'teacher_quiz': teacherQuizzes,
+      'attempts': attemptsInfo,
     };
   }
+
+  // Future<Map<String, dynamic>> fetchUserProgress() async {
+  //   final uid = FirebaseAuth.instance.currentUser?.uid;
+  //   if (uid == null) return {};
+  //   final userDoc =
+  //       await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+  //   final userData = userDoc.data();
+  //   if (userData == null) return {};
+
+  //   final rawScores = userData['score'] ?? {};
+  //   final rawBadges = userData['badge'] ?? {};
+  //   final teacherNo = userData['teacher_no'];
+  //   final teacherQuizzes = Map<String, dynamic>.from(
+  //     userData['teacher_quiz'] ?? {},
+  //   );
+
+  //   // print("Raw teacher_quiz data: $teacherQuizzes");
+  //   // print("score: $rawScores");
+  //   // print("badge: $rawBadges");
+
+  //   final scores = <String, String>{};
+  //   final badges = <String, String>{};
+  //   final dynamicChapters = <String>[];
+
+  //   // if (teacherNo != null && teacherNo.toString().isNotEmpty) {
+  //   for (var quizKey in teacherQuizzes.keys) {
+  //     final info = Map<String, dynamic>.from(teacherQuizzes[quizKey] ?? {});
+  //     final quizId = info['quiz_id'];
+  //     if (quizId != null) {
+  //       final quizDoc =
+  //           await FirebaseFirestore.instance
+  //               .collection('chapters')
+  //               .where('owner_id', isEqualTo: teacherNo)
+  //               .get();
+
+  //       for (var chapter in quizDoc.docs) {
+  //         final quizRef = FirebaseFirestore.instance
+  //             .collection('chapters')
+  //             .doc(chapter.id)
+  //             .collection('quizzes')
+  //             .doc(quizId);
+
+  //         final quizSnapshot = await quizRef.get();
+  //         if (quizSnapshot.exists) {
+  //           final quizData = quizSnapshot.data();
+  //           final quizTitle = quizData?['title'] ?? quizKey;
+
+  //           dynamicChapters.add(quizTitle);
+  //           if (rawScores.containsKey(quizKey)) {
+  //             scores[quizTitle] = rawScores[quizKey].toString();
+  //           }
+  //           if (rawBadges.containsKey(quizKey)) {
+  //             badges[quizTitle] = rawBadges[quizKey].toString();
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   return {
+  //     'scores': scores,
+  //     'badges': badges,
+  //     'chapters': dynamicChapters,
+  //     'teacher_quiz': teacherQuizzes,
+  //   };
+  //   // }
+
+  //   // else {
+  //   //   (rawScores as Map).forEach((key, value) {
+  //   //     scores[key.toString()] = value.toString();
+  //   //   });
+  //   //   (rawBadges as Map).forEach((key, value) {
+  //   //     badges[key.toString()] = value.toString();
+  //   //   });
+  //   // }
+
+  //   // return {
+  //   //   'scores': scores,
+  //   //   'badges': badges,
+  //   //   'chapters': [
+  //   //     'kenal_objek',
+  //   //     'susun_nombor',
+  //   //     'mengira_tambah',
+  //   //     'mengira_tolak',
+  //   //     'wang',
+  //   //     'masa',
+  //   //   ],
+  //   //   'teacher_quiz': {},
+  //   // };
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +194,6 @@ class ProgressPage extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.blue.shade700, Colors.lightBlue.shade300],
-              // colors: [Colors.lightBlue.shade200, Colors.lightGreen.shade200],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -183,6 +207,8 @@ class ProgressPage extends StatelessWidget {
 
               final scores = snapshot.data!['scores'] as Map<String, String>;
               final badges = snapshot.data!['badges'] as Map<String, String>;
+              final attempts =
+                  snapshot.data!['attempts'] as Map<String, List<dynamic>>;
 
               // Calculate total score and achievements
               final totalScore = scores.values.fold(0, (sum, score) {
@@ -239,14 +265,18 @@ class ProgressPage extends StatelessWidget {
                               final key = entry.value;
                               final score = scores[key] ?? "0/10";
                               final badge = badges[key] ?? "None";
+                              final chapterAttempts =
+                                  (attempts[key] ?? [])
+                                      .cast<Map<String, dynamic>>();
+
                               // print(
                               //   "🔍 Chapter key: $key | Score: $score | Badge: $badge",
                               // );
                               return _buildProgressCard(
                                 displayName,
-                                // score as String,
                                 score,
                                 badge,
+                                chapterAttempts,
                                 context,
                               );
                             }).toList(),
@@ -323,6 +353,62 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
+  void _showAttemptsDialog(
+    BuildContext context,
+    String title,
+    List<Map<String, dynamic>> attempts,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: Text('Sejarah Percubaan - $title'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child:
+                  attempts.isEmpty
+                      ? const Text('Tiada percubaan direkodkan.')
+                      : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: attempts.length,
+                        itemBuilder: (context, index) {
+                          final attempt =
+                              attempts[attempts.length -
+                                  1 -
+                                  index]; // latest first
+                          final score = attempt['score'] ?? 'N/A';
+                          final badge = attempt['badge'] ?? '-';
+                          final timestamp = attempt['timestamp'];
+                          final formattedDate =
+                              timestamp != null
+                                  ? DateTime.tryParse(
+                                        timestamp,
+                                      )?.toLocal().toString().split('.')[0] ??
+                                      'Tidak diketahui'
+                                  : 'Tidak diketahui';
+
+                          return ListTile(
+                            leading: Icon(
+                              Icons.check_circle,
+                              color: Colors.blue.shade400,
+                            ),
+                            title: Text('Skor: $score'),
+                            subtitle: Text('Lencana: $badge\n$formattedDate'),
+                            isThreeLine: true,
+                          );
+                        },
+                      ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Widget _buildAnimatedTrophy(BuildContext context, int earnedBadges) {
     final trophyColor = earnedBadges > 3 ? Colors.amber : Colors.blueGrey;
 
@@ -379,7 +465,13 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressCard(String title, String score, String badge, context) {
+  Widget _buildProgressCard(
+    String title,
+    String score,
+    String badge,
+    List<Map<String, dynamic>> attempts,
+    context,
+  ) {
     final badgeIcon = _getBadgeIcon(badge);
     final badgeColor = _getBadgeColor(badge);
     final hasBadge = badge != "None";
@@ -448,6 +540,11 @@ class ProgressPage extends StatelessWidget {
                   color: Colors.grey,
                 ),
               ),
+          TextButton.icon(
+            onPressed: () => _showAttemptsDialog(context, title, attempts),
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('Lihat Percubaan'),
+          ),
         ],
       ),
     );

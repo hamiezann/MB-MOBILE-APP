@@ -76,6 +76,23 @@ class _RegisterPageState extends State<RegisterPage> {
     final username = _usernameController.text.trim();
     final classIdInput = _classIdController.text.trim();
 
+    // Email validation
+    final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+    if (!emailRegex.hasMatch(email)) {
+      _showAlert("Email Tidak Sah", "Sila masukkan emel yang sah.");
+      return;
+    }
+
+    // Password validation: At least one uppercase, one lowercase, one symbol (.,_,,), min 6 characters
+    final passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[.,_]).{6,}$');
+    if (!passwordRegex.hasMatch(password)) {
+      _showAlert(
+        "Kata Laluan Lemah",
+        "Kata laluan mesti mempunyai sekurang-kurangnya satu huruf besar, satu huruf kecil dan satu simbol (.,_).",
+      );
+      return;
+    }
+
     if (password != confirmPassword) {
       _showAlert(
         "Kata Laluan Tidak Sama",
@@ -85,12 +102,11 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     String userId = '';
-    String? classId; // Will be null for teachers
+    String? classId;
 
     if (_selectedRole == 'student') {
       final randomNum = DateTime.now().millisecondsSinceEpoch % 10000;
       userId = 'STUDENT_$randomNum';
-      // classId = classIdInput;
     } else {
       userId = _teacherIdController.text.trim();
       if (userId.isEmpty) {
@@ -108,14 +124,14 @@ class _RegisterPageState extends State<RegisterPage> {
         'email': email,
         'role': _selectedRole,
         'id': userId,
-        'score': {
-          'kenal_objek': '0/10',
-          'susun_nombor': '0/10',
-          'mengira_tambah': '0/10',
-          'mengira_tolak': '0/10',
-          'wang': '0/10',
-          'masa': '0/10',
-        },
+        // 'score': {
+        //   'kenal_objek': '0/10',
+        //   'susun_nombor': '0/10',
+        //   'mengira_tambah': '0/10',
+        //   'mengira_tolak': '0/10',
+        //   'wang': '0/10',
+        //   'masa': '0/10',
+        // },
         if (_selectedRole == 'student') 'teacher_no': '',
       };
 
@@ -379,7 +395,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildLabel("ID Guru", screenWidth),
+                                    _buildLabel("No Pekerja", screenWidth),
                                     SizedBox(height: 10),
                                     _buildTextField(_teacherIdController),
                                   ],
@@ -536,12 +552,29 @@ class _RegisterPageState extends State<RegisterPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(message, style: const TextStyle(fontSize: 14)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Ok'),
+                child: const Text('Ok', style: TextStyle(color: Colors.amber)),
               ),
             ],
           ),
