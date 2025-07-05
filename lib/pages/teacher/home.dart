@@ -394,7 +394,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           Colors.orange,
         ),
         _buildStatCard(
-          'Quiz Dibuat',
+          'Kuiz Dibuat',
           '${_quiz.length}',
           Icons.quiz,
           Colors.purple,
@@ -483,7 +483,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
-                'Buat Quiz',
+                'Buat Kuiz',
                 Icons.quiz_outlined,
                 Colors.purple,
                 () => _showAddQuizDialog(),
@@ -1099,7 +1099,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             children: [
                               Icon(Icons.quiz),
                               SizedBox(width: 8),
-                              Text('Urus Quiz'),
+                              Text('Urus Kuiz'),
                             ],
                           ),
                         ),
@@ -1181,7 +1181,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     _showAddSubtopicDialog,
                   ),
                   _buildContentCard(
-                    'Buat Quiz',
+                    'Buat Kuiz',
                     'Cipta kuiz untuk penilaian',
                     Icons.quiz_outlined,
                     Colors.purple,
@@ -1314,7 +1314,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   children: [
                     _buildProfileStat('Pelajar', '${_students.length}'),
                     _buildProfileStat('Bab', '${_chapters.length}'),
-                    _buildProfileStat('Quiz', '${_quiz.length}'),
+                    _buildProfileStat('Kuiz', '${_quiz.length}'),
                   ],
                 ),
               ],
@@ -2208,7 +2208,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Tambah Quiz Baru',
+                                  'Tambah Kuiz Baru',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
@@ -2299,7 +2299,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                                   child: TextField(
                                     controller: titleController,
                                     decoration: InputDecoration(
-                                      labelText: 'Tajuk Quiz',
+                                      labelText: 'Tajuk Kuiz',
                                       labelStyle: TextStyle(
                                         color: Colors.purple.shade600,
                                       ),
@@ -2419,7 +2419,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                                                 color: Colors.white,
                                               ),
                                               SizedBox(width: 8),
-                                              Text('Quiz berjaya dibuat!'),
+                                              Text('Kuiz berjaya dibuat!'),
                                             ],
                                           ),
                                           backgroundColor: Colors.lightGreen,

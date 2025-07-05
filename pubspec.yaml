@@ -64,51 +64,13 @@ flutter:
     - assets/uji minda.png
     - assets/product-placeholder.png
     - assets/profile-picture.jpg
-    - assets/chapter/topic-kenal_objek.png
-    - assets/chapter/topic-susun_nombor.png
-    - assets/chapter/topic-mengira_tambah.png
-    - assets/chapter/topic-mengira_tolak.png
-    - assets/chapter/topic-wang.png
-    - assets/chapter/topic-masa.png
 
-    - assets/subtopics/kenal objek- saiz.png
-    - assets/subtopics/kenal objek- warna.png
-    - assets/subtopics/kenal objek- uji minda.png
-    - assets/subtopics/kenal objek- bentuk.png
-    - assets/subtopics/mengira_tambah.png
-    - assets/subtopics/mengira_tolak.png
-    - assets/subtopics/syiling.png
-    - assets/subtopics/wang kertas.png
-    - assets/subtopics/waktu.png
-    - assets/subtopics/hari.png
-
-    - assets/chapter/
-    - assets/subtopics/
-
-    - assets/tutorials/warna/
-    - assets/tutorials/saiz/
-    - assets/tutorials/bentuk/
-    - assets/tutorials/kenal nombor/
-    - assets/tutorials/susun nombor/
-    - assets/tutorials/tambah/
-    - assets/tutorials/tolak/
-    - assets/tutorials/wang kertas/
-    - assets/tutorials/syiling/
-    - assets/tutorials/waktu/
-    - assets/tutorials/hari/
-
-    - assets/quiz/kenal_objek/
-    - assets/quiz/susun nombor/
-    - assets/quiz/tambah/
-    - assets/quiz/tolak/
-    - assets/quiz/wang/
-    - assets/quiz/masa/
+    - assets/badge/lvl1.png
+    - assets/badge/lvl2.png
+    - assets/badge/lvl3.png
+    - assets/badge/lvl4.png
 
     - assets/video/test_video.mp4
-    - assets/audio/warna/
-    - assets/audio/saiz/
-    - assets/audio/bentuk/
-    - assets/audio/dummy/
 
     - assets/logo/app_icon.png
 

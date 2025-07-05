@@ -345,6 +345,471 @@ class _SubtopicContentPageState extends State<SubtopicContentPage> {
     );
   }
 
+  void _showEditContentDialog(
+    String contentId,
+    Map<String, dynamic> contentData,
+  ) {
+    final TextEditingController descController = TextEditingController(
+      text: contentData['description'] ?? '',
+    );
+
+    File? image1File;
+    File? image2File;
+    File? audioFile;
+
+    String? existingImage1Url = contentData['imageUrl1'];
+    String? existingImage2Url = contentData['imageUrl2'];
+    String? existingAudioUrl = contentData['audioUrl'];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 16,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    constraints: const BoxConstraints(maxHeight: 600),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.blue.shade50, Colors.white],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.blue.shade600,
+                                Colors.blue.shade400,
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.edit, color: Colors.white),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Edit Kandungan',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Content
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Description Field
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.shade200,
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextField(
+                                    controller: descController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Penerangan',
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue.shade600,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding: const EdgeInsets.all(16),
+                                    ),
+                                    maxLines: 3,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Image 1
+                                _buildFilePickerCard(
+                                  title: 'Gambar 1',
+                                  icon: Icons.image_outlined,
+                                  file: image1File ?? existingImage1Url,
+                                  onTap: () async {
+                                    final picked = await ImagePicker()
+                                        .pickImage(source: ImageSource.gallery);
+                                    if (picked != null) {
+                                      setState(
+                                        () => image1File = File(picked.path),
+                                      );
+                                    }
+                                  },
+                                  color: Colors.blue,
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Image 2
+                                _buildFilePickerCard(
+                                  title: 'Gambar 2',
+                                  icon: Icons.image_outlined,
+                                  file: image2File ?? existingImage2Url,
+                                  onTap: () async {
+                                    final picked = await ImagePicker()
+                                        .pickImage(source: ImageSource.gallery);
+                                    if (picked != null) {
+                                      setState(
+                                        () => image2File = File(picked.path),
+                                      );
+                                    }
+                                  },
+                                  color: Colors.green,
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Audio
+                                _buildFilePickerCard(
+                                  title: 'Audio *',
+                                  icon: Icons.audiotrack_outlined,
+                                  file: audioFile ?? existingAudioUrl,
+                                  onTap: () async {
+                                    final result = await FilePicker.platform
+                                        .pickFiles(
+                                          type: FileType.custom,
+                                          allowedExtensions: ['mp3'],
+                                        );
+                                    if (result != null &&
+                                        result.files.single.path != null) {
+                                      final selectedFile = File(
+                                        result.files.single.path!,
+                                      );
+                                      final fileSizeInMB =
+                                          await selectedFile.length() /
+                                          (1024 * 1024);
+                                      if (fileSizeInMB > 5) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: const Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.warning,
+                                                  color: Colors.white,
+                                                ),
+                                                SizedBox(width: 12),
+                                                Text(
+                                                  'Fail audio melebihi 5MB. Sila pilih semula.',
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor:
+                                                Colors.red.shade600,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      setState(() => audioFile = selectedFile);
+                                    }
+                                  },
+                                  color: Colors.orange,
+                                  isRequired: true,
+                                ),
+
+                                const SizedBox(height: 8),
+                                Text(
+                                  '* Medan wajib',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Actions
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Batal',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton(
+                                onPressed:
+                                    () => _handleUpdateContent(
+                                      context,
+                                      contentId,
+                                      descController,
+                                      image1File,
+                                      image2File,
+                                      audioFile,
+                                      existingImage1Url,
+                                      existingImage2Url,
+                                      existingAudioUrl,
+                                    ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 4,
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.save_outlined, size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Simpan',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
+    );
+  }
+
+  Future<void> _handleUpdateContent(
+    BuildContext context,
+    String contentId,
+    TextEditingController descController,
+    File? image1File,
+    File? image2File,
+    File? audioFile,
+    String? existingImage1Url,
+    String? existingImage2Url,
+    String? existingAudioUrl,
+  ) async {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final docRef = FirebaseFirestore.instance
+        .collection('chapters')
+        .doc(widget.chapterId)
+        .collection('subtopics')
+        .doc(widget.subtopicId)
+        .collection('contents')
+        .doc(contentId);
+
+    Map<String, dynamic> updatedData = {
+      'description': descController.text.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    BuildContext? dialogContext;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        dialogContext = ctx;
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade50, Colors.white],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const CircularProgressIndicator(strokeWidth: 3),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Memuat naik kandungan...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sila tunggu sebentar',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final storage = FirebaseStorage.instance;
+
+      // Upload new image1 if changed
+      if (image1File != null) {
+        final ref = storage.ref('contents/$userId/${contentId}_img1.jpg');
+        await ref.putFile(image1File).timeout(const Duration(minutes: 2));
+        final url = await ref.getDownloadURL();
+        updatedData['imageUrl1'] = url;
+      } else {
+        updatedData['imageUrl1'] = existingImage1Url;
+      }
+
+      // Upload new image2 if changed
+      if (image2File != null) {
+        final ref = storage.ref('contents/$userId/${contentId}_img2.jpg');
+        await ref.putFile(image2File).timeout(const Duration(minutes: 2));
+        final url = await ref.getDownloadURL();
+        updatedData['imageUrl2'] = url;
+      } else {
+        updatedData['imageUrl2'] = existingImage2Url;
+      }
+
+      // Upload new audio if changed
+      if (audioFile != null) {
+        final ref = storage.ref('contents/$userId/${contentId}_audio.mp3');
+        await ref.putFile(audioFile).timeout(const Duration(minutes: 2));
+        final url = await ref.getDownloadURL();
+        updatedData['audioUrl'] = url;
+      } else {
+        updatedData['audioUrl'] = existingAudioUrl;
+      }
+
+      // Update Firestore document
+      await docRef.update(updatedData);
+
+      // Close loading dialog
+      if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+        Navigator.pop(dialogContext!);
+      }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Kandungan berjaya dikemaskini!'),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+        Navigator.pop(dialogContext!); // Close loading dialog
+      }
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Close edit dialog
+      }
+
+      // Show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Ralat semasa kemaskini: ${e.toString()}')),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   void _showImageDialog(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -418,20 +883,120 @@ class _SubtopicContentPageState extends State<SubtopicContentPage> {
     );
   }
 
+  // Widget _buildFilePickerCard({
+  //   required String title,
+  //   required IconData icon,
+  //   required File? file,
+  //   required VoidCallback onTap,
+  //   required MaterialColor color,
+  //   bool isRequired = false,
+  // }) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: file != null ? color.shade300 : Colors.grey.shade300,
+  //         width: 2,
+  //       ),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.grey.shade100,
+  //           blurRadius: 4,
+  //           offset: const Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: InkWell(
+  //       onTap: onTap,
+  //       borderRadius: BorderRadius.circular(12),
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(16),
+  //         child: Row(
+  //           children: [
+  //             Container(
+  //               width: 48,
+  //               height: 48,
+  //               decoration: BoxDecoration(
+  //                 color: color.shade100,
+  //                 shape: BoxShape.circle,
+  //               ),
+  //               child: Icon(
+  //                 file != null ? Icons.check_circle : icon,
+  //                 color: file != null ? color.shade700 : color.shade600,
+  //                 size: 24,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 16),
+  //             Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     title,
+  //                     style: TextStyle(
+  //                       fontWeight: FontWeight.w600,
+  //                       fontSize: 16,
+  //                       color: Colors.grey.shade800,
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 4),
+  //                   Text(
+  //                     file != null
+  //                         ? file.path.split('/').last
+  //                         : 'Ketik untuk memilih fail',
+  //                     style: TextStyle(
+  //                       color:
+  //                           file != null
+  //                               ? color.shade700
+  //                               : Colors.grey.shade600,
+  //                       fontSize: 14,
+  //                       fontWeight:
+  //                           file != null ? FontWeight.w500 : FontWeight.normal,
+  //                     ),
+  //                     maxLines: 1,
+  //                     overflow: TextOverflow.ellipsis,
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             Icon(
+  //               Icons.arrow_forward_ios,
+  //               color: Colors.grey.shade400,
+  //               size: 16,
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildFilePickerCard({
     required String title,
     required IconData icon,
-    required File? file,
+    required dynamic file, // Accept File or String (URL)
     required VoidCallback onTap,
     required MaterialColor color,
     bool isRequired = false,
   }) {
+    String fileName = 'Ketik untuk memilih fail';
+    bool isSelected = false;
+
+    if (file is File) {
+      fileName = file.path.split('/').last;
+      isSelected = true;
+    } else if (file is String && file.isNotEmpty) {
+      fileName = Uri.parse(file).pathSegments.last;
+      isSelected = true;
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: file != null ? color.shade300 : Colors.grey.shade300,
+          color: isSelected ? color.shade300 : Colors.grey.shade300,
           width: 2,
         ),
         boxShadow: [
@@ -457,8 +1022,8 @@ class _SubtopicContentPageState extends State<SubtopicContentPage> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  file != null ? Icons.check_circle : icon,
-                  color: file != null ? color.shade700 : color.shade600,
+                  isSelected ? Icons.check_circle : icon,
+                  color: isSelected ? color.shade700 : color.shade600,
                   size: 24,
                 ),
               ),
@@ -477,17 +1042,13 @@ class _SubtopicContentPageState extends State<SubtopicContentPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      file != null
-                          ? file.path.split('/').last
-                          : 'Ketik untuk memilih fail',
+                      fileName,
                       style: TextStyle(
                         color:
-                            file != null
-                                ? color.shade700
-                                : Colors.grey.shade600,
+                            isSelected ? color.shade700 : Colors.grey.shade600,
                         fontSize: 14,
                         fontWeight:
-                            file != null ? FontWeight.w500 : FontWeight.normal,
+                            isSelected ? FontWeight.w500 : FontWeight.normal,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -871,6 +1432,15 @@ class _SubtopicContentPageState extends State<SubtopicContentPage> {
                                 fontSize: 16,
                               ),
                             ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.blue.shade400),
+                            onPressed:
+                                () => _showEditContentDialog(
+                                  data.id,
+                                  data.data() as Map<String, dynamic>,
+                                  // contentRef,
+                                ),
                           ),
                           IconButton(
                             icon: Icon(

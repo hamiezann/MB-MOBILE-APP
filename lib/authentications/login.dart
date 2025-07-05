@@ -20,18 +20,60 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String _selectedRole = 'student';
-  @override
-  void initState() {
-    super.initState();
-    if (FirebaseAuth.instance.currentUser != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      });
-    }
-  }
+  // bool _roleManuallySelected = false;
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   if (FirebaseAuth.instance.currentUser != null) {
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       Navigator.pushReplacement(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => const HomePage()),
+  //       );
+  //     });
+  //   }
+  // }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _checkLoggedInUser();
+  // }
+
+  // void _checkLoggedInUser() async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user != null) {
+  //     final doc =
+  //         await FirebaseFirestore.instance
+  //             .collection('users')
+  //             .doc(user.uid)
+  //             .get();
+  //     final data = doc.data();
+
+  //     if (data != null && data.containsKey('role')) {
+  //       final role = data['role'];
+  //       final prefs = await SharedPreferences.getInstance();
+  //       await prefs.setString('role', role);
+  //       await prefs.setString('id', data['id'] ?? '');
+  //       await prefs.setString('teacher_no', data['teacher_no'] ?? '');
+
+  //       if (!mounted) return;
+
+  //       if (role == 'teacher') {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(builder: (_) => const TeacherHomePage()),
+  //         );
+  //       } else {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(builder: (_) => const HomePage()),
+  //         );
+  //       }
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                   onRoleChanged: (role) {
                     setState(() {
                       _selectedRole = role;
+                      // _roleManuallySelected = true;
                     });
                   },
                 ),
@@ -218,6 +261,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signIn() async {
+    print("selected role $_selectedRole");
+    // return;
     setState(() => _isLoading = true);
     try {
       String email = _emailController.text.trim();
@@ -230,53 +275,69 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      // if (!_roleManuallySelected) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(
+      //       content: Text('Sila pilih peranan anda (Pelajar/Guru).'),
+      //     ),
+      //   );
+      //   setState(() => _isLoading = false);
+      //   return;
+      // }
+
+      // Step 1: Sign in with Firebase Auth
       final UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
-      final String userId = userCredential.user!.uid;
+      final String uid = userCredential.user!.uid;
 
-      // Fetch user data from Firestore
+      // Step 2: Fetch user document (allowed by your Firestore rules)
       final DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .get();
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pengguna tidak dijumpai di Firestore')),
+          const SnackBar(content: Text('Akaun tidak dijumpai di Firestore.')),
         );
         return;
       }
 
       final userData = userDoc.data() as Map<String, dynamic>;
-      final String role = userData['role'] ?? 'student';
+      final String actualRole = userData['role'] ?? '';
       final String id = userData['id'] ?? '';
       final String teacherNo = userData['teacher_no'] ?? '';
-
-      // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('role', role);
-      await prefs.setString('id', id);
-      await prefs.setString('teacher_no', teacherNo);
-
-      // print("Stored role: $role");
-      // print("Stored teacher_no: $teacherNo");
-      // print("Stored teacher_no: $id");
-
-      // Navigate based on role
-      if (role == 'teacher') {
-        Navigator.pushReplacement(
+      print("actual role: $actualRole");
+      // Step 3: Cross-check selected role
+      if (_selectedRole != actualRole) {
+        String roleMessage =
+            _selectedRole == 'student'
+                ? 'Emel ini bukan pelajar berdaftar.'
+                : 'Emel ini bukan guru berdaftar.';
+        ScaffoldMessenger.of(
           context,
-          MaterialPageRoute(
-            builder: (context) => TeacherHomePage(),
-          ), // Replace with TeacherPage if needed
-        );
-      } else if (role == 'student') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        ).showSnackBar(SnackBar(content: Text(roleMessage)));
+        await FirebaseAuth.instance.signOut(); // Log out if role mismatch
+        return;
+      } else {
+        // Step 4: Save role info to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('role', actualRole);
+        await prefs.setString('id', id);
+        await prefs.setString('teacher_no', teacherNo);
+        await prefs.setString('last_selected_role', _selectedRole);
+
+        // Step 5: Navigate based on role
+        if (actualRole == 'teacher') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => TeacherHomePage()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       String message = switch (e.code) {

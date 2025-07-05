@@ -610,7 +610,7 @@ class _ManageQuizContentPageState extends State<ManageQuizContentPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Urus Soalan Quiz'),
+        title: const Text('Urus Soalan Kuiz'),
         backgroundColor: Colors.purple.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -883,7 +883,7 @@ class _ManageQuizContentPageState extends State<ManageQuizContentPage> {
                               const SizedBox(width: 12),
                               const Expanded(
                                 child: Text(
-                                  'Edit Soalan Quiz',
+                                  'Edit Soalan Kuiz',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,

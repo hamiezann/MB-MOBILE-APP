@@ -44,7 +44,7 @@ class _RegisterPageState extends State<RegisterPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text("Terma dan Perkhidmatan"),
+            title: const Text("Terma dan Syarat"),
             content: const SingleChildScrollView(
               child: Text(
                 "1. Anda mesti mematuhi semua peraturan\n"
@@ -453,7 +453,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 child: GestureDetector(
                                   onTap: _showTermsAndConditions,
                                   child: Text(
-                                    "Saya bersetuju dengan Terma dan Perkhidmatan",
+                                    "Saya bersetuju dengan Terma dan Syarat",
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: screenWidth * 0.045,

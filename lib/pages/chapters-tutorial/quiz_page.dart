@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:math_buddy_v1/models/quiz_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:math_buddy_v1/pages/animated_badge.dart';
 
 class QuizPage extends StatefulWidget {
   final List<QuizContent> questions;
@@ -68,30 +69,6 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
-  // void _checkAnswer(String answer) {
-  //   if (answered) return;
-
-  //   setState(() {
-  //     answered = true;
-  //     selectedAnswer = answer;
-  //     if (answer == widget.questions[currentIndex].correctAnswer) {
-  //       score++;
-  //     }
-  //   });
-
-  //   Future.delayed(const Duration(seconds: 1), () {
-  //     if (currentIndex < widget.questions.length - 1) {
-  //       setState(() {
-  //         currentIndex++;
-  //         answered = false;
-  //         selectedAnswer = null;
-  //       });
-  //     } else {
-  //       _showScoreDialog();
-  //     }
-  //   });
-  // }
-
   bool isUrl(String path) {
     return path.startsWith('http://') || path.startsWith('https://');
   }
@@ -117,31 +94,140 @@ class _QuizPageState extends State<QuizPage> {
 
   void _showScoreDialog() {
     _updateQuizResult();
+
+    final badge = _getBadge(score, widget.questions.length);
+    final isLevel4 = badge == 'Cemerlang'; // Assuming lvl4 is for perfect score
+
+    String badgeAsset = switch (badge) {
+      'Cemerlang' => 'assets/badge/lvl3.png',
+      'Syabas' => 'assets/badge/lvl3.png',
+      'Bagus' => 'assets/badge/lvl2.png',
+      _ => 'assets/badge/lvl1.png',
+    };
+
+    Color _getBadgeColor(String badge) {
+      switch (badge) {
+        case 'Cuba Lagi':
+          return Colors.orange;
+        case 'Bagus':
+          return Colors.blue;
+        case 'Syabas':
+          return Colors.green;
+        case 'Cemerlang':
+          return Colors.amber.shade700;
+        default:
+          return Colors.grey;
+      }
+    }
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder:
           (_) => AlertDialog(
-            title: const Text('Ujian Tamat'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: Colors.white,
+            contentPadding: const EdgeInsets.all(24),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Skor anda: $score / ${widget.questions.length}'),
-                const SizedBox(height: 10),
-                Text('Lencana: ${_getBadge(score, widget.questions.length)}'),
+                const Text(
+                  'Tahniah!',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                AnimatedBadge(imagePath: badgeAsset, isLevel4: isLevel4),
+                const SizedBox(height: 16),
+
+                Text(
+                  'Skor Anda',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '$score / ${widget.questions.length}',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text(
+                  'Lencana: $badge',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _getBadgeColor(badge),
+                  ),
+                ),
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context); // back to subtopic
-                },
-                child: const Text('Kembali'),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.check),
+                  label: const Text('Kembali'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.lightBlueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
     );
   }
+
+  // void _showScoreDialog() {
+  //   _updateQuizResult();
+  //   showDialog(
+  //     context: context,
+  //     builder:
+  //         (_) => AlertDialog(
+  //           title: const Text('Ujian Tamat'),
+  //           content: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text('Skor anda: $score / ${widget.questions.length}'),
+  //               const SizedBox(height: 10),
+  //               Text('Lencana: ${_getBadge(score, widget.questions.length)}'),
+  //             ],
+  //           ),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.pop(context);
+  //                 Navigator.pop(context); // back to subtopic
+  //               },
+  //               child: const Text('Kembali'),
+  //             ),
+  //           ],
+  //         ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -267,42 +353,6 @@ class _QuizPageState extends State<QuizPage> {
       return Image.asset(path, fit: BoxFit.contain);
     }
   }
-
-  // Future<void> _updateQuizResult() async {
-  //   final user = FirebaseAuth.instance.currentUser;
-  //   if (user == null) return;
-
-  //   final userDoc = FirebaseFirestore.instance
-  //       .collection('users')
-  //       .doc(user.uid);
-  //   final quizKey = widget.quizTitle.toLowerCase().replaceAll(' ', '_');
-  //   final totalQuestions = widget.questions.length;
-  //   final badge = _getBadge(score, totalQuestions);
-  //   final newScoreFormatted = "$score/$totalQuestions";
-
-  //   final userSnapshot = await userDoc.get();
-  //   final existingScoreRaw = userSnapshot.data()?['score']?[quizKey];
-
-  //   int existingRaw = 0;
-  //   if (existingScoreRaw != null && existingScoreRaw is String) {
-  //     final parts = existingScoreRaw.split('/');
-  //     if (parts.isNotEmpty) existingRaw = int.tryParse(parts[0]) ?? 0;
-  //   }
-  //   if (score > existingRaw) {
-  //     final Map<String, dynamic> updateData = {
-  //       'score': {quizKey: newScoreFormatted},
-  //       'badge': {quizKey: badge},
-  //     };
-
-  //     if (widget.teacherNo != null && widget.teacherNo!.isNotEmpty) {
-  //       updateData['teacher_quiz'] = {
-  //         quizKey: {'teacher_no': widget.teacherNo!, 'quiz_id': widget.quizId},
-  //       };
-  //     }
-
-  //     await userDoc.set(updateData, SetOptions(merge: true));
-  //   }
-  // }
 
   Future<void> _updateQuizResult() async {
     final user = FirebaseAuth.instance.currentUser;

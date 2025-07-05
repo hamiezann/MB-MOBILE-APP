@@ -9,32 +9,62 @@ import 'package:shared_preferences/shared_preferences.dart';
 class RootPage extends StatelessWidget {
   const RootPage({super.key});
 
+  // Future<Widget> _getPageBasedOnRole(User user) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   String? role = prefs.getString('role');
+
+  //   if (role == null) {
+  //     // Fetch from Firestore
+  //     final doc =
+  //         await FirebaseFirestore.instance
+  //             .collection('users')
+  //             .doc(user.uid)
+  //             .get();
+
+  //     if (doc.exists) {
+  //       final data = doc.data();
+  //       role = data?['role'] ?? 'student';
+  //       await prefs.setString('role', role!); // Cache it
+  //     } else {
+  //       role = 'student';
+  //     }
+  //   }
+
+  //   if (role == 'teacher') {
+  //     return TeacherHomePage();
+  //   } else {
+  //     return const HomePage();
+  //   }
+  // }
+
   Future<Widget> _getPageBasedOnRole(User user) async {
     final prefs = await SharedPreferences.getInstance();
-    String? role = prefs.getString('role');
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
-    if (role == null) {
-      // Fetch from Firestore
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-      if (doc.exists) {
-        final data = doc.data();
-        role = data?['role'] ?? 'student';
-        await prefs.setString('role', role!); // Cache it
-      } else {
-        role = 'student';
-      }
+    if (!doc.exists) {
+      return const LoginPage();
     }
 
-    if (role == 'teacher') {
-      return TeacherHomePage();
-    } else {
-      return const HomePage();
+    final data = doc.data() ?? {};
+    final actualRole = data['role'] ?? 'student';
+    final selectedRole = prefs.getString('last_selected_role');
+
+    // Update cached data
+    await prefs.setString('role', actualRole);
+    await prefs.setString('id', data['id'] ?? '');
+    await prefs.setString('teacher_no', data['teacher_no'] ?? '');
+
+    // 🟡 Mismatch or never selected role: force back to login
+    if (selectedRole == null || selectedRole != actualRole) {
+      return const LoginPage();
     }
+
+    // ✅ All matched: go to correct home
+    return actualRole == 'teacher' ? TeacherHomePage() : const HomePage();
   }
 
   @override
@@ -47,20 +77,21 @@ class RootPage extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasData) {
-          return FutureBuilder<Widget>(
-            future: _getPageBasedOnRole(snapshot.data!),
-            builder: (context, roleSnapshot) {
-              if (roleSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              } else if (roleSnapshot.hasData) {
-                return roleSnapshot.data!;
-              } else {
-                return const LoginPage();
-              }
-            },
-          );
+          return const LoginPage();
+          // return FutureBuilder<Widget>(
+          //   future: _getPageBasedOnRole(snapshot.data!),
+          //   builder: (context, roleSnapshot) {
+          //     if (roleSnapshot.connectionState == ConnectionState.waiting) {
+          //       return const Scaffold(
+          //         body: Center(child: CircularProgressIndicator()),
+          //       );
+          //     } else if (roleSnapshot.hasData) {
+          //       return roleSnapshot.data!;
+          //     } else {
+          //       return const LoginPage();
+          //     }
+          //   },
+          // );
         } else {
           return const LoginPage();
         }
